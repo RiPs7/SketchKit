@@ -18,6 +18,7 @@ import java.awt.Graphics2D;
  *
  * <p>Note that this class is unrelated to {@link java.awt.Canvas}.
  */
+@SuppressWarnings("unused")
 public class Canvas extends JPanel {
 
     private ShapeRenderer shapeRenderer;
@@ -173,6 +174,71 @@ public class Canvas extends JPanel {
     public void circle(final double x, final double y, final double diameter) {
         ensureInitialised();
         ellipse(x, y, diameter, diameter);
+    }
+
+    /**
+     * Converts a colour from HSB (hue, saturation, brightness) to an AWT {@link Color}.
+     *
+     * <p>This is equivalent to {@link java.awt.Color#getHSBColor(float, float, float)} but returns
+     * a {@link Color} with full opacity and keeps the conversion explicit and readable.
+     *
+     * <p>The six branches of the conversion correspond to the six 60-degree sectors of the colour
+     * wheel:
+     * <ol>
+     *   <li>Red → Yellow</li>
+     *   <li>Yellow → Green</li>
+     *   <li>Green → Cyan</li>
+     *   <li>Cyan → Blue</li>
+     *   <li>Blue → Magenta</li>
+     *   <li>Magenta → Red</li>
+     * </ol>
+     *
+     * @param hue        the hue angle, in {@code [0, 1)}, where {@code 0} and {@code 1} both
+     *                   represent red. Values outside this range are wrapped.
+     * @param saturation the saturation, in {@code [0, 1]}: {@code 0} is grey, {@code 1} is fully
+     *                   saturated
+     * @param brightness the brightness, in {@code [0, 1]}: {@code 0} is black, {@code 1} is fully
+     *                   bright
+     * @return the equivalent fully opaque {@link Color}
+     */
+    public Color hsbToRgb(final float hue, final float saturation, final float brightness) {
+        final float h = (hue % 1.0f + 1.0f) % 1.0f * 6.0f; // wrap to [0, 6)
+        final float c = brightness * saturation;           // chroma
+        final float x = c * (1 - Math.abs(h % 2 - 1));     // secondary component
+        final float m = brightness - c;                    // brightness adjustment
+
+        final float r, g, b;
+        if      (h < 1) { r = c; g = x; b = 0; }
+        else if (h < 2) { r = x; g = c; b = 0; }
+        else if (h < 3) { r = 0; g = c; b = x; }
+        else if (h < 4) { r = 0; g = x; b = c; }
+        else if (h < 5) { r = x; g = 0; b = c; }
+        else            { r = c; g = 0; b = x; }
+
+        return new Color(r + m, g + m, b + m);
+    }
+
+    /**
+     * Draws an isosceles triangle pointing in the given direction.
+     *
+     * <p>The triangle is centred on {@code (x, y)} with its apex pointing towards {@code angle}.
+     * An angle of {@code 0} points right; positive angles rotate clockwise on screen, consistent
+     * with {@link com.rips7.sketchkit.maths.Vector2D#heading()}. This makes it straightforward
+     * to draw a boid facing its velocity vector:
+     * <pre>{@code
+     * triangle(position.x(), position.y(), 12, 20, velocity.heading());
+     * }</pre>
+     *
+     * @param x      the x-coordinate of the centre of the triangle
+     * @param y      the y-coordinate of the centre of the triangle
+     * @param base   the width of the base
+     * @param height the distance from base to apex
+     * @param angle  the heading angle in radians
+     * @throws IllegalStateException if called outside a drawing pass
+     */
+    public void triangle(final double x, final double y, final double base, final double height, final double angle) {
+        ensureInitialised();
+        shapeRenderer.triangle(x, y, base, height, angle);
     }
 
     /**

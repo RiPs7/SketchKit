@@ -7,6 +7,7 @@ import com.rips7.sketchkit.canvas.shape.Line;
 import com.rips7.sketchkit.canvas.shape.Path;
 import com.rips7.sketchkit.canvas.shape.Rectangle;
 import com.rips7.sketchkit.canvas.shape.Shape;
+import com.rips7.sketchkit.canvas.shape.Triangle;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -21,6 +22,7 @@ import java.awt.geom.Path2D;
  * {@link #ellipseMode}) update that context, and shape methods ({@link #line},
  * {@link #rectangle}, {@link #ellipse}) draw immediately using the current style.
  */
+@SuppressWarnings("unused")
 public final class ShapeRenderer {
 
     private final Graphics2D g2d;
@@ -123,6 +125,21 @@ public final class ShapeRenderer {
      */
     public void rectangle(final double x, final double y, final double width, final double height) {
         draw(new Rectangle(x, y, width, height));
+    }
+
+    /**
+     * Draws an isosceles triangle pointing in the given direction.
+     *
+     * <p>The triangle is centred on {@code (x, y)} with its apex pointing towards {@code angle}.
+     *
+     * @param x      the x-coordinate of the centre of the triangle
+     * @param y      the y-coordinate of the centre of the triangle
+     * @param base   the width of the base
+     * @param height the distance from base to apex
+     * @param angle  the heading angle in radians
+     */
+    public void triangle(final double x, final double y, final double base, final double height, final double angle) {
+        draw(new Triangle(x, y, base, height, angle));
     }
 
     /**
