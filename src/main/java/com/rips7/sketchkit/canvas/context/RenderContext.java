@@ -6,6 +6,7 @@ import com.rips7.sketchkit.canvas.config.EllipseMode;
 import com.rips7.sketchkit.canvas.config.FillConfig;
 import com.rips7.sketchkit.canvas.config.StrokeConfig;
 import com.rips7.sketchkit.canvas.config.StrokeWeightConfig;
+import com.rips7.sketchkit.canvas.renderer.Renderer;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -13,7 +14,7 @@ import java.util.List;
 
 /**
  * Holds the drawing state that is shared by all shapes drawn through a
- * {@link com.rips7.sketchkit.canvas.renderer.ShapeRenderer}.
+ * {@link Renderer}.
  *
  * <p>The context aggregates a {@link FillConfig}, a {@link StrokeConfig} and an
  * {@link EllipseConfig}. Shapes read these settings when they are drawn, so changing a setting
@@ -21,14 +22,14 @@ import java.util.List;
  *
  * <p>Defaults: black fill, black stroke and {@link EllipseMode#CENTER}.
  */
-public final class ShapeContext {
+public final class RenderContext {
 
     private final List<Config<?>> configs = new ArrayList<>();
 
     /**
      * Creates a context populated with the default fill, stroke and ellipse settings.
      */
-    public ShapeContext() {
+    public RenderContext() {
         configs.add(new FillConfig());
         configs.add(new StrokeConfig());
         configs.add(new StrokeWeightConfig());

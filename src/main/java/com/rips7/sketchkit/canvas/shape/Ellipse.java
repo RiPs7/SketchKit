@@ -1,6 +1,6 @@
 package com.rips7.sketchkit.canvas.shape;
 
-import com.rips7.sketchkit.canvas.context.ShapeContext;
+import com.rips7.sketchkit.canvas.context.RenderContext;
 
 import java.awt.Graphics2D;
 import java.awt.geom.Ellipse2D;
@@ -35,16 +35,16 @@ public final class Ellipse implements Shape {
     }
 
     @Override
-    public void fill(final Graphics2D graphics, final ShapeContext context) {
+    public void fill(final Graphics2D graphics, final RenderContext context) {
         graphics.fill(createEllipse(context));
     }
 
     @Override
-    public void stroke(final Graphics2D graphics, final ShapeContext context) {
+    public void stroke(final Graphics2D graphics, final RenderContext context) {
         graphics.draw(createEllipse(context));
     }
 
-    private Ellipse2D.Double createEllipse(final ShapeContext context) {
+    private Ellipse2D.Double createEllipse(final RenderContext context) {
         final double ellipseX;
         final double ellipseY;
 

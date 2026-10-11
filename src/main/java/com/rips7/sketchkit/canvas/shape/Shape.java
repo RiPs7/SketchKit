@@ -1,6 +1,6 @@
 package com.rips7.sketchkit.canvas.shape;
 
-import com.rips7.sketchkit.canvas.context.ShapeContext;
+import com.rips7.sketchkit.canvas.context.RenderContext;
 
 import java.awt.Graphics2D;
 
@@ -20,7 +20,7 @@ public interface Shape {
      * @param context  the context providing the current style and any
      *                 geometry-specific settings
      */
-    void fill(final Graphics2D graphics, final ShapeContext context);
+    void fill(final Graphics2D graphics, final RenderContext context);
 
     /**
      * Strokes the outline of this shape.
@@ -29,6 +29,6 @@ public interface Shape {
      * @param context  the context providing the current style and any
      *                 geometry-specific settings
      */
-    void stroke(final Graphics2D graphics, final ShapeContext context);
+    void stroke(final Graphics2D graphics, final RenderContext context);
 
 }

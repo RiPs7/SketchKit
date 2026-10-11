@@ -1,6 +1,6 @@
 package com.rips7.sketchkit.canvas.shape;
 
-import com.rips7.sketchkit.canvas.context.ShapeContext;
+import com.rips7.sketchkit.canvas.context.RenderContext;
 
 import java.awt.Graphics2D;
 
@@ -39,7 +39,7 @@ public final class Line implements Shape {
      * @param context  the current shape context
      */
     @Override
-    public void fill(final Graphics2D graphics, final ShapeContext context) {
+    public void fill(final Graphics2D graphics, final RenderContext context) {
         // Lines cannot be filled.
     }
 
@@ -52,7 +52,7 @@ public final class Line implements Shape {
      * @param context  the current shape context
      */
     @Override
-    public void stroke(final Graphics2D graphics, final ShapeContext context) {
+    public void stroke(final Graphics2D graphics, final RenderContext context) {
         graphics.drawLine(
                 (int) Math.round(x1),
                 (int) Math.round(y1),

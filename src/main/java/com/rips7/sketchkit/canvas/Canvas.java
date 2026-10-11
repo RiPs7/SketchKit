@@ -1,7 +1,7 @@
 package com.rips7.sketchkit.canvas;
 
 import com.rips7.sketchkit.canvas.config.EllipseMode;
-import com.rips7.sketchkit.canvas.renderer.ShapeRenderer;
+import com.rips7.sketchkit.canvas.renderer.Renderer;
 
 import javax.swing.JPanel;
 import java.awt.Color;
@@ -21,26 +21,26 @@ import java.awt.Graphics2D;
 @SuppressWarnings("unused")
 public class Canvas extends JPanel {
 
-    private ShapeRenderer shapeRenderer;
+    private Renderer renderer;
 
     /**
      * Starts a drawing pass on the given graphics object.
      *
-     * <p>This creates a new {@link ShapeRenderer}, so style settings from a previous pass are
+     * <p>This creates a new {@link Renderer}, so style settings from a previous pass are
      * reset to their defaults.
      *
      * @param graphics the graphics object to draw on; must be a {@link Graphics2D}
      * @throws ClassCastException if {@code graphics} is not a {@link Graphics2D}
      */
     public void begin(final Graphics graphics) {
-        shapeRenderer = new ShapeRenderer((Graphics2D) graphics);
+        renderer = new Renderer((Graphics2D) graphics);
     }
 
     /**
      * Ends the current drawing pass and discards the renderer.
      */
     public void end() {
-        shapeRenderer = null;
+        renderer = null;
     }
 
     /**
@@ -53,7 +53,7 @@ public class Canvas extends JPanel {
      */
     public void background(final Color color) {
         ensureInitialised();
-        shapeRenderer.background(color);
+        renderer.background(color);
     }
 
     /**
@@ -64,7 +64,7 @@ public class Canvas extends JPanel {
      */
     public void fill(final Color color) {
         ensureInitialised();
-        shapeRenderer.fill(color);
+        renderer.fill(color);
     }
 
     /**
@@ -74,7 +74,7 @@ public class Canvas extends JPanel {
      */
     public void noFill() {
         ensureInitialised();
-        shapeRenderer.fill(null);
+        renderer.fill(null);
     }
 
     /**
@@ -85,7 +85,7 @@ public class Canvas extends JPanel {
      */
     public void stroke(final Color color) {
         ensureInitialised();
-        shapeRenderer.stroke(color);
+        renderer.stroke(color);
     }
 
     /**
@@ -96,7 +96,7 @@ public class Canvas extends JPanel {
      */
     public void noStroke() {
         ensureInitialised();
-        shapeRenderer.stroke(null);
+        renderer.stroke(null);
     }
 
     /**
@@ -107,7 +107,7 @@ public class Canvas extends JPanel {
      */
     public void strokeWeight(final double weight) {
         ensureInitialised();
-        shapeRenderer.strokeWeight(weight);
+        renderer.strokeWeight(weight);
     }
 
     /**
@@ -118,7 +118,7 @@ public class Canvas extends JPanel {
      */
     public void ellipseMode(final EllipseMode mode) {
         ensureInitialised();
-        shapeRenderer.ellipseMode(mode);
+        renderer.ellipseMode(mode);
     }
 
     /**
@@ -132,7 +132,7 @@ public class Canvas extends JPanel {
      */
     public void line(final double x1, final double y1, final double x2, final double y2) {
         ensureInitialised();
-        shapeRenderer.line(x1, y1, x2, y2);
+        renderer.line(x1, y1, x2, y2);
     }
 
     /**
@@ -146,7 +146,7 @@ public class Canvas extends JPanel {
      */
     public void rect(final double x, final double y, final double width, final double height) {
         ensureInitialised();
-        shapeRenderer.rectangle(x, y, width, height);
+        renderer.rectangle(x, y, width, height);
     }
 
     /**
@@ -160,7 +160,7 @@ public class Canvas extends JPanel {
      */
     public void ellipse(final double x, final double y, final double width, final double height) {
         ensureInitialised();
-        shapeRenderer.ellipse(x, y, width, height);
+        renderer.ellipse(x, y, width, height);
     }
 
     /**
@@ -174,6 +174,43 @@ public class Canvas extends JPanel {
     public void circle(final double x, final double y, final double diameter) {
         ensureInitialised();
         ellipse(x, y, diameter, diameter);
+    }
+
+    /**
+     * Draws an isosceles triangle pointing in the given direction.
+     *
+     * <p>The triangle is centred on {@code (x, y)} with its apex pointing towards {@code angle}.
+     * An angle of {@code 0} points right; positive angles rotate clockwise on screen, consistent
+     * with {@link com.rips7.sketchkit.maths.Vector2D#heading()}. This makes it straightforward
+     * to draw a boid facing its velocity vector:
+     * <pre>{@code
+     * triangle(position.x(), position.y(), 12, 20, velocity.heading());
+     * }</pre>
+     *
+     * @param x      the x-coordinate of the centre of the triangle
+     * @param y      the y-coordinate of the centre of the triangle
+     * @param base   the width of the base
+     * @param height the distance from base to apex
+     * @param angle  the heading angle in radians
+     * @throws IllegalStateException if called outside a drawing pass
+     */
+    public void triangle(final double x, final double y, final double base, final double height, final double angle) {
+        ensureInitialised();
+        renderer.triangle(x, y, base, height, angle);
+    }
+
+    /**
+     * Begins defining a custom shape.
+     *
+     * <p>The returned builder is used to add vertices to the shape and complete
+     * it with {@code endShape()}.
+     *
+     * @return a builder for defining the custom shape
+     * @throws IllegalStateException if called outside a drawing pass
+     */
+    public Renderer.ShapeBuilder shape() {
+        ensureInitialised();
+        return renderer.shape();
     }
 
     /**
@@ -219,40 +256,73 @@ public class Canvas extends JPanel {
     }
 
     /**
-     * Draws an isosceles triangle pointing in the given direction.
+     * Saves the current transformation matrix onto a stack so it can be restored later with
+     * {@link #popMatrix()}.
      *
-     * <p>The triangle is centred on {@code (x, y)} with its apex pointing towards {@code angle}.
-     * An angle of {@code 0} points right; positive angles rotate clockwise on screen, consistent
-     * with {@link com.rips7.sketchkit.maths.Vector2D#heading()}. This makes it straightforward
-     * to draw a boid facing its velocity vector:
+     * <p>Calls to {@code pushMatrix()} and {@code popMatrix()} must be balanced. A typical
+     * usage is to isolate a transform to one object:
      * <pre>{@code
-     * triangle(position.x(), position.y(), 12, 20, velocity.heading());
+     * pushMatrix();
+     * translate(position.x(), position.y());
+     * rotate(velocity.heading());
+     * triangle(0, 0, 10, 15, 0);
+     * popMatrix();
      * }</pre>
      *
-     * @param x      the x-coordinate of the centre of the triangle
-     * @param y      the y-coordinate of the centre of the triangle
-     * @param base   the width of the base
-     * @param height the distance from base to apex
-     * @param angle  the heading angle in radians
      * @throws IllegalStateException if called outside a drawing pass
      */
-    public void triangle(final double x, final double y, final double base, final double height, final double angle) {
+    public void pushMatrix() {
         ensureInitialised();
-        shapeRenderer.triangle(x, y, base, height, angle);
+        renderer.pushMatrix();
     }
 
     /**
-     * Begins defining a custom shape.
+     * Restores the transformation matrix saved by the most recent {@link #pushMatrix()}.
      *
-     * <p>The returned builder is used to add vertices to the shape and complete
-     * it with {@code endShape()}.
+     * @throws IllegalStateException if called outside a drawing pass
+     * @throws IllegalStateException if there is no matching {@link #pushMatrix()}
+     */
+    public void popMatrix() {
+        ensureInitialised();
+        renderer.popMatrix();
+    }
+
+    /**
+     * Moves the origin of the coordinate system by the given amounts.
      *
-     * @return a builder for defining the custom shape
+     * <p>The translation accumulates with any existing transform. Use {@link #pushMatrix()} and
+     * {@link #popMatrix()} to scope it to a single object.
+     *
+     * @param dx the distance to move along the x-axis
+     * @param dy the distance to move along the y-axis
      * @throws IllegalStateException if called outside a drawing pass
      */
-    public ShapeRenderer.ShapeBuilder shape() {
+    public void translate(final double dx, final double dy) {
         ensureInitialised();
-        return shapeRenderer.shape();
+        renderer.translate(dx, dy);
+    }
+
+    /**
+     * Rotates the coordinate system about the current origin.
+     *
+     * @param angle the angle in radians; positive values rotate clockwise on screen
+     * @throws IllegalStateException if called outside a drawing pass
+     */
+    public void rotate(final double angle) {
+        ensureInitialised();
+        renderer.rotate(angle);
+    }
+
+    /**
+     * Scales the coordinate system uniformly about the current origin.
+     *
+     * @param factor the scale factor; values greater than {@code 1} enlarge, less than {@code 1}
+     *               shrink
+     * @throws IllegalStateException if called outside a drawing pass
+     */
+    public void scale(final double factor) {
+        ensureInitialised();
+        renderer.scale(factor);
     }
 
     /**
@@ -279,7 +349,7 @@ public class Canvas extends JPanel {
      * @throws IllegalStateException if {@link #begin(Graphics)} has not been called
      */
     private void ensureInitialised() {
-        if (shapeRenderer == null) {
+        if (renderer == null) {
             throw new IllegalStateException("Shape Renderer has not been initialised");
         }
     }

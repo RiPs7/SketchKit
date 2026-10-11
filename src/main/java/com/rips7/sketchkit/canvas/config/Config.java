@@ -1,11 +1,12 @@
 package com.rips7.sketchkit.canvas.config;
 
+import com.rips7.sketchkit.canvas.context.RenderContext;
+
 /**
  * A single drawing setting that holds a value of type {@code T}.
  *
  * <p>Implementations (for example {@link FillConfig} or {@link EllipseConfig}) are stored in a
- * {@link com.rips7.sketchkit.canvas.context.ShapeContext}, which looks them up by their concrete
- * type.
+ * {@link RenderContext}, which looks them up by their concrete type.
  *
  * @param <T> the type of value held by this configuration
  */

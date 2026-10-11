@@ -1,7 +1,7 @@
 package com.rips7.sketchkit.canvas.renderer;
 
 import com.rips7.sketchkit.canvas.config.EllipseMode;
-import com.rips7.sketchkit.canvas.context.ShapeContext;
+import com.rips7.sketchkit.canvas.context.RenderContext;
 import com.rips7.sketchkit.canvas.shape.Ellipse;
 import com.rips7.sketchkit.canvas.shape.Line;
 import com.rips7.sketchkit.canvas.shape.Path;
@@ -12,37 +12,41 @@ import com.rips7.sketchkit.canvas.shape.Triangle;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Path2D;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 /**
- * Draws shapes onto a {@link Graphics2D} surface using the styling stored in a
- * {@link ShapeContext}.
+ * Draws onto a {@link Graphics2D} surface using the styling stored in a
+ * {@link RenderContext}.
  *
  * <p>The renderer owns its own context. Style methods ({@link #fill}, {@link #stroke},
  * {@link #ellipseMode}) update that context, and shape methods ({@link #line},
  * {@link #rectangle}, {@link #ellipse}) draw immediately using the current style.
  */
 @SuppressWarnings("unused")
-public final class ShapeRenderer {
+public final class Renderer {
 
     private final Graphics2D g2d;
-    private final ShapeContext context;
+    private final RenderContext context;
+    private final Deque<AffineTransform> matrixStack = new ArrayDeque<>();
 
     /**
      * Creates a renderer that draws onto the given graphics object, with a fresh
-     * {@link ShapeContext} holding the default style.
+     * {@link RenderContext} holding the default style.
      *
      * @param g2d the graphics surface to draw on
      */
-    public ShapeRenderer(final Graphics2D g2d) {
+    public Renderer(final Graphics2D g2d) {
         this.g2d = g2d;
-        this.context = new ShapeContext();
+        this.context = new RenderContext();
     }
 
     // Context
 
     /**
-     * Sets the fill colour used for subsequently drawn shapes.
+     * Sets the fill colour used for subsequent drawing.
      *
      * @param color the fill colour, or {@code null} to disable filling
      */
@@ -51,7 +55,7 @@ public final class ShapeRenderer {
     }
 
     /**
-     * Sets the stroke colour used for subsequently drawn shapes.
+     * Sets the stroke colour used for subsequent drawing.
      *
      * @param color the stroke colour, or {@code null} to disable outlines
      */
@@ -60,7 +64,7 @@ public final class ShapeRenderer {
     }
 
     /**
-     * Sets the stroke weight used for subsequently drawn shapes.
+     * Sets the stroke weight used for subsequent drawing.
      *
      * @param weight the stroke weight
      */
@@ -217,4 +221,74 @@ public final class ShapeRenderer {
             draw(new Path(path));
         }
     }
+
+    // Transforms
+
+    /**
+     * Saves the current transformation matrix onto a stack so it can be restored later with
+     * {@link #popMatrix()}.
+     *
+     * <p>Calls to {@code pushMatrix()} and {@code popMatrix()} must be balanced. A typical
+     * usage is to isolate a transform to one object:
+     * <pre>{@code
+     * pushMatrix();
+     * translate(position.x(), position.y());
+     * rotate(velocity.heading());
+     * triangle(0, 0, 10, 15, 0);
+     * popMatrix();
+     * }</pre>
+     */
+    public void pushMatrix() {
+        matrixStack.push(g2d.getTransform());
+    }
+
+    /**
+     * Restores the transformation matrix saved by the most recent {@link #pushMatrix()}.
+     *
+     * @throws IllegalStateException if there is no matching {@link #pushMatrix()}
+     */
+    public void popMatrix() {
+        if (matrixStack.isEmpty()) {
+            throw new IllegalStateException("popMatrix() called without a matching pushMatrix()");
+        }
+        g2d.setTransform(matrixStack.pop());
+    }
+
+    /**
+     * Moves the origin of the coordinate system by the given amounts.
+     *
+     * <p>The translation accumulates with any existing transform. Use {@link #pushMatrix()} and
+     * {@link #popMatrix()} to scope it to a single object.
+     *
+     * @param dx the distance to move along the x-axis
+     * @param dy the distance to move along the y-axis
+     */
+    public void translate(final double dx, final double dy) {
+        g2d.translate(dx, dy);
+    }
+
+    /**
+     * Rotates the coordinate system about the current origin.
+     *
+     * <p>Positive angles rotate clockwise on screen, consistent with
+     * {@link com.rips7.sketchkit.maths.Vector2D#heading()}.
+     *
+     * @param angle the rotation angle in radians
+     */
+    public void rotate(final double angle) {
+        g2d.rotate(angle);
+    }
+
+    /**
+     * Scales the coordinate system uniformly about the current origin.
+     *
+     * <p>Values greater than {@code 1} enlarge; values between {@code 0} and {@code 1} shrink.
+     * Negative values also mirror the coordinate system.
+     *
+     * @param factor the scale factor
+     */
+    public void scale(final double factor) {
+        g2d.scale(factor, factor);
+    }
+
 }

@@ -1,6 +1,6 @@
 package com.rips7.sketchkit.canvas.shape;
 
-import com.rips7.sketchkit.canvas.context.ShapeContext;
+import com.rips7.sketchkit.canvas.context.RenderContext;
 
 import java.awt.Graphics2D;
 import java.awt.geom.Path2D;
@@ -31,7 +31,7 @@ public final class Path implements Shape {
      * @param context  the current shape context
      */
     @Override
-    public void fill(final Graphics2D graphics, final ShapeContext context) {
+    public void fill(final Graphics2D graphics, final RenderContext context) {
         graphics.fill(path);
     }
 
@@ -42,7 +42,7 @@ public final class Path implements Shape {
      * @param context  the current shape context
      */
     @Override
-    public void stroke(final Graphics2D graphics, final ShapeContext context) {
+    public void stroke(final Graphics2D graphics, final RenderContext context) {
         graphics.draw(path);
     }
 }
