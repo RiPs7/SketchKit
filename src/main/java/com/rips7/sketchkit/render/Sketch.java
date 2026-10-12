@@ -1,6 +1,7 @@
 package com.rips7.sketchkit.render;
 
 import com.rips7.sketchkit.canvas.Canvas;
+import com.rips7.sketchkit.input.KeyState;
 import com.rips7.sketchkit.input.MouseButton;
 import com.rips7.sketchkit.input.MouseState;
 
@@ -8,9 +9,13 @@ import javax.swing.JFrame;
 import javax.swing.Timer;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 
 /**
  * Base class for animated sketches.
@@ -37,7 +42,21 @@ import java.awt.event.MouseMotionAdapter;
  *   <li>{@link #mouseWheel(int)}</li>
  * </ul>
  *
- * <p>All callbacks run on the Swing event thread and see the updated mouse state.
+ * <h2>Keyboard input</h2>
+ *
+ * <p>The current keyboard state is available through {@link #key()}, {@link #keyCode()} and
+ * {@link #isKeyPressed()}, and can be read at any point inside {@link #draw()}. To test whether
+ * a specific key is held, use {@link #isKeyDown(int)} with a {@link KeyEvent} constant:
+ * <pre>{@code
+ * if (isKeyDown(KeyEvent.VK_LEFT)) { ... }
+ * }</pre>
+ *
+ * <p>Override any of the keyboard callback methods to respond to specific events:
+ * <ul>
+ *   <li>{@link #keyPressed()}</li>
+ *   <li>{@link #keyReleased()}</li>
+ *   <li>{@link #keyTyped()}</li>
+ * </ul>
  *
  * <h2>Example</h2>
  *
@@ -61,6 +80,12 @@ import java.awt.event.MouseMotionAdapter;
  *             // handle left click
  *         }
  *     }
+ *
+ *     public void keyPressed() {
+ *         if (keyCode() == KeyEvent.VK_SPACE) {
+ *             // handle space bar
+ *         }
+ *     }
  * }
  * }</pre>
  */
@@ -71,6 +96,7 @@ public abstract class Sketch extends Canvas {
 
     private final Timer drawTimer;
     private final MouseState mouseState = new MouseState();
+    private final KeyState keyState = new KeyState();
 
     private double deltaTime;
     private long lastFrameTime;
@@ -103,7 +129,11 @@ public abstract class Sketch extends Canvas {
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
 
+        setFocusable(true);
+        requestFocusInWindow();
+
         registerMouseListeners();
+        registerKeyListeners();
 
         drawTimer = new Timer(FRAME_DELAY, event -> repaint());
 
@@ -278,6 +308,88 @@ public abstract class Sketch extends Canvas {
      */
     public void mouseWheel(final int delta) { }
 
+    // ------------------------------------------------------------------ keyboard state
+
+    /**
+     * Returns the character produced by the most recent key event.
+     *
+     * <p>Returns {@link KeyEvent#CHAR_UNDEFINED} for keys that do not produce a character,
+     * such as arrow keys or modifier keys. Use {@link #keyCode()} in those cases.
+     *
+     * @return the most recent key character, or {@link KeyEvent#CHAR_UNDEFINED}
+     */
+    public final char key() {
+        return keyState.key();
+    }
+
+    /**
+     * Returns the virtual key code of the most recent key press or release.
+     *
+     * <p>Key codes are the {@code VK_} constants defined on {@link KeyEvent}, for example
+     * {@link KeyEvent#VK_LEFT}, {@link KeyEvent#VK_SHIFT} or {@link KeyEvent#VK_SPACE}.
+     *
+     * @return the most recent virtual key code
+     */
+    public final int keyCode() {
+        return keyState.keyCode();
+    }
+
+    /**
+     * Returns whether any key is currently held down.
+     *
+     * @return {@code true} if at least one key is pressed
+     */
+    public final boolean isKeyPressed() {
+        return keyState.isKeyPressed();
+    }
+
+    /**
+     * Returns whether a specific key is currently held down.
+     *
+     * <p>Unlike {@link #isKeyPressed()}, this lets you test individual keys independently,
+     * which is useful when multiple keys can be held at the same time:
+     * <pre>{@code
+     * if (isKeyDown(KeyEvent.VK_LEFT) && isKeyDown(KeyEvent.VK_SHIFT)) { ... }
+     * }</pre>
+     *
+     * @param code the {@link KeyEvent} virtual key code to test
+     * @return {@code true} if that key is currently held down
+     */
+    public final boolean isKeyDown(final int code) {
+        return keyState.isKeyDown(code);
+    }
+
+    // ------------------------------------------------------------------ keyboard callbacks
+
+    /**
+     * Called when a key is pressed.
+     *
+     * <p>Override to handle key press events. The key character and code are available via
+     * {@link #key()} and {@link #keyCode()}.
+     *
+     * <p>This method fires repeatedly while a key is held, because the operating system
+     * generates repeated key press events. To respond only to the initial press, track the
+     * state yourself using {@link #isKeyDown(int)}.
+     */
+    public void keyPressed() { }
+
+    /**
+     * Called when a key is released.
+     *
+     * <p>Override to handle key release events. The key character and code are available via
+     * {@link #key()} and {@link #keyCode()}.
+     */
+    public void keyReleased() { }
+
+    /**
+     * Called when a key that produces a character is typed (pressed and released).
+     *
+     * <p>Override to handle character input. Only keys that produce a character fire this
+     * event; use {@link #keyPressed()} for keys such as arrow keys and modifier keys.
+     * The character is available via {@link #key()}.
+     */
+    public void keyTyped() { }
+
     // ------------------------------------------------------------------ lifecycle
 
     /**
@@ -365,9 +477,39 @@ public abstract class Sketch extends Canvas {
             }
         });
 
-        addMouseWheelListener(e -> {
-            mouseState.onWheel(e);
-            Sketch.this.mouseWheel(mouseState.wheelDelta());
+        addMouseWheelListener(new MouseWheelListener() {
+            @Override
+            public void mouseWheelMoved(final MouseWheelEvent e) {
+                mouseState.onWheel(e);
+                Sketch.this.mouseWheel(mouseState.wheelDelta());
+            }
+        });
+    }
+
+    /**
+     * Registers keyboard listeners on this panel to update the key state and invoke callbacks.
+     *
+     * <p>The panel must be focusable (set in the constructor) to receive key events.
+     */
+    private void registerKeyListeners() {
+        addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(final KeyEvent e) {
+                keyState.onPressed(e);
+                Sketch.this.keyPressed();
+            }
+
+            @Override
+            public void keyReleased(final KeyEvent e) {
+                keyState.onReleased(e);
+                Sketch.this.keyReleased();
+            }
+
+            @Override
+            public void keyTyped(final KeyEvent e) {
+                keyState.onTyped(e);
+                Sketch.this.keyTyped();
+            }
         });
     }
 }
