@@ -1,6 +1,9 @@
 package com.rips7.sketchkit.canvas.renderer;
 
 import com.rips7.sketchkit.canvas.config.EllipseMode;
+import com.rips7.sketchkit.canvas.config.TextAlignConfig.TextAlign;
+import com.rips7.sketchkit.canvas.config.TextAlignH;
+import com.rips7.sketchkit.canvas.config.TextAlignV;
 import com.rips7.sketchkit.canvas.context.RenderContext;
 import com.rips7.sketchkit.canvas.shape.Ellipse;
 import com.rips7.sketchkit.canvas.shape.Line;
@@ -11,6 +14,8 @@ import com.rips7.sketchkit.canvas.shape.Triangle;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Path2D;
@@ -220,6 +225,101 @@ public final class Renderer {
             path.closePath();
             draw(new Path(path));
         }
+    }
+
+    // ── text ────────────────────────────────────────────────────────────────
+
+    /**
+     * Sets the font used for subsequent text drawing.
+     *
+     * <p>Replaces both the typeface and size. To change only the size while keeping the
+     * current typeface, use {@link #textSize(float)}.
+     *
+     * @param font the font to use; must not be {@code null}
+     */
+    public void textFont(final Font font) {
+        context.textFont(font);
+    }
+
+    /**
+     * Sets the point size of the current font, preserving its typeface and style.
+     *
+     * <p>Equivalent to calling {@link #textFont(Font)} with
+     * {@code context.textFont().deriveFont(size)}.
+     *
+     * @param size the desired font size in points; must be positive
+     */
+    public void textSize(final float size) {
+        context.textFont(context.textFont().deriveFont(size));
+    }
+
+    /**
+     * Sets the horizontal text alignment and resets the vertical alignment to
+     * {@link TextAlignV#BASELINE}.
+     *
+     * @param alignH the horizontal alignment; must not be {@code null}
+     */
+    public void textAlign(final TextAlignH alignH) {
+        context.textAlign(alignH, TextAlignV.BASELINE);
+    }
+
+    /**
+     * Sets the horizontal and vertical text alignment independently.
+     *
+     * @param alignH the horizontal alignment; must not be {@code null}
+     * @param alignV the vertical alignment; must not be {@code null}
+     */
+    public void textAlign(final TextAlignH alignH, final TextAlignV alignV) {
+        context.textAlign(alignH, alignV);
+    }
+
+    /**
+     * Draws a string at {@code (x, y)} using the current fill colour, font, and text alignment.
+     *
+     * <p>The exact pixel position is derived from {@code x} and {@code y} according to the
+     * current {@link TextAlignH} and {@link TextAlignV} settings:
+     * <ul>
+     *   <li>{@link TextAlignH#LEFT} — {@code x} is the left edge of the text</li>
+     *   <li>{@link TextAlignH#CENTER} — {@code x} is the horizontal centre</li>
+     *   <li>{@link TextAlignH#RIGHT} — {@code x} is the right edge</li>
+     *   <li>{@link TextAlignV#BASELINE} — {@code y} is the typographic baseline (default)</li>
+     *   <li>{@link TextAlignV#TOP} — {@code y} is the top of the ascender line</li>
+     *   <li>{@link TextAlignV#CENTER} — {@code y} is the visual vertical centre</li>
+     *   <li>{@link TextAlignV#BOTTOM} — {@code y} is the bottom of the descender line</li>
+     * </ul>
+     *
+     * <p>If the current fill colour is {@code null} (i.e. {@code noFill()} has been called),
+     * this method does nothing, consistent with the behaviour of shape drawing methods.
+     *
+     * @param text the string to draw; must not be {@code null}
+     * @param x    the x-coordinate, interpreted according to the horizontal alignment
+     * @param y    the y-coordinate, interpreted according to the vertical alignment
+     */
+    public void text(final String text, final double x, final double y) {
+        if (context.fill() == null) {
+            return;
+        }
+
+        g2d.setColor(context.fill());
+        g2d.setFont(context.textFont());
+
+        final FontMetrics fm = g2d.getFontMetrics();
+        final TextAlign align = context.textAlign();
+
+        final double drawX = switch (align.h()) {
+            case LEFT   -> x;
+            case CENTER -> x - fm.stringWidth(text) / 2.0;
+            case RIGHT  -> x - fm.stringWidth(text);
+        };
+
+        final double drawY = switch (align.v()) {
+            case BASELINE -> y;
+            case TOP      -> y + fm.getAscent();
+            case CENTER   -> y + (fm.getAscent() - fm.getDescent()) / 2.0;
+            case BOTTOM   -> y - fm.getDescent();
+        };
+
+        g2d.drawString(text, (float) drawX, (float) drawY);
     }
 
     // Transforms

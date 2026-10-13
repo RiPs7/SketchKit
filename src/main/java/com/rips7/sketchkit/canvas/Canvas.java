@@ -1,10 +1,13 @@
 package com.rips7.sketchkit.canvas;
 
 import com.rips7.sketchkit.canvas.config.EllipseMode;
+import com.rips7.sketchkit.canvas.config.TextAlignH;
+import com.rips7.sketchkit.canvas.config.TextAlignV;
 import com.rips7.sketchkit.canvas.renderer.Renderer;
 
 import javax.swing.JPanel;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 
@@ -211,6 +214,95 @@ public class Canvas extends JPanel {
     public Renderer.ShapeBuilder shape() {
         ensureInitialised();
         return renderer.shape();
+    }
+
+    /**
+     * Sets the font used for subsequently drawn text.
+     *
+     * <p>Replaces both the typeface and size in one call. To change only the point size
+     * while keeping the current typeface, use {@link #textSize(float)}.
+     *
+     * @param font the font to use
+     * @throws IllegalStateException if called outside a drawing pass
+     */
+    public void textFont(final Font font) {
+        ensureInitialised();
+        renderer.textFont(font);
+    }
+
+    /**
+     * Sets the point size of the current font, preserving its typeface and style.
+     *
+     * <p>This is a convenience alternative to {@link #textFont(Font)} when only the size
+     * needs to change:
+     * <pre>{@code
+     * textFont(new Font("Serif", Font.BOLD, 12)); // set family once
+     * textSize(24);                               // scale up later
+     * }</pre>
+     *
+     * @param size the desired font size in points; must be positive
+     * @throws IllegalStateException if called outside a drawing pass
+     */
+    public void textSize(final float size) {
+        ensureInitialised();
+        renderer.textSize(size);
+    }
+
+    /**
+     * Sets the horizontal alignment for subsequently drawn text and resets the vertical
+     * alignment to {@link TextAlignV#BASELINE}.
+     *
+     * <p>Example — right-align a label against the right edge of the canvas:
+     * <pre>{@code
+     * textAlign(TextAlignH.RIGHT);
+     * text("score: " + score, width(), 20);
+     * }</pre>
+     *
+     * @param alignH the horizontal alignment
+     * @throws IllegalStateException if called outside a drawing pass
+     */
+    public void textAlign(final TextAlignH alignH) {
+        ensureInitialised();
+        renderer.textAlign(alignH);
+    }
+
+    /**
+     * Sets the horizontal and vertical alignment for subsequently drawn text.
+     *
+     * <p>Example — centre a label both horizontally and vertically on a button:
+     * <pre>{@code
+     * textAlign(TextAlignH.CENTER, TextAlignV.CENTER);
+     * text("Play", buttonX, buttonY);
+     * }</pre>
+     *
+     * @param alignH the horizontal alignment
+     * @param alignV the vertical alignment
+     * @throws IllegalStateException if called outside a drawing pass
+     */
+    public void textAlign(final TextAlignH alignH, final TextAlignV alignV) {
+        ensureInitialised();
+        renderer.textAlign(alignH, alignV);
+    }
+
+    /**
+     * Draws a string at the given position using the current fill colour, font, and text
+     * alignment.
+     *
+     * <p>The exact pixel drawn to is determined by the current {@link TextAlignH} and
+     * {@link TextAlignV} settings. With the defaults ({@link TextAlignH#LEFT} and
+     * {@link TextAlignV#BASELINE}), {@code (x, y)} is the left end of the typographic
+     * baseline, matching Java2D's native behaviour.
+     *
+     * <p>If filling has been disabled with {@link #noFill()}, this method does nothing.
+     *
+     * @param text the string to draw
+     * @param x    the x-coordinate, interpreted according to the current horizontal alignment
+     * @param y    the y-coordinate, interpreted according to the current vertical alignment
+     * @throws IllegalStateException if called outside a drawing pass
+     */
+    public void text(final String text, final double x, final double y) {
+        ensureInitialised();
+        renderer.text(text, x, y);
     }
 
     /**
