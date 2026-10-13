@@ -52,29 +52,39 @@ Sketch          user-facing entry point; implements setup() and draw()
 
 The main entry point. Users extend `Sketch` and implement `setup()` and `draw()`. The animation loop, window lifecycle and frame timing are handled automatically. All drawing operations are inherited from `Canvas`.
 
+`Sketch` also exposes mouse and keyboard state and their corresponding event callbacks, updated automatically each frame before `draw()` is called.
+
 ### Canvas
 
-Provides the high-level drawing API: shapes, styling, transforms, background, colour utilities and more. Canvas methods delegate rendering to the `Renderer` and are available directly from `Sketch`.
+Provides the high-level drawing API: shapes, styling, transforms, text, background, and colour utilities. `Canvas` methods delegate to the `Renderer` and are all available directly from `Sketch`. The full API is documented in the `Canvas` Javadoc.
 
 ### Renderer
 
-Owns the `Graphics2D` surface and the current `RenderContext` (fill, stroke, stroke weight, drawing modes). When a shape is drawn, the renderer applies the current style and then delegates to the shape's own fill and stroke operations.
+Owns the `Graphics2D` surface and the current `RenderContext`. When a drawing method is called, the renderer applies the context's current style and delegates to the shape's own fill and stroke operations.
 
 This keeps styling logic in one place. Adding a new shape does not require changing the renderer.
 
 ### Shape
 
-Shapes contain geometry and implement two operations: `fill` and `stroke`. They are responsible for knowing how their geometry is drawn, but not how it is styled. The renderer has already configured the surface before invoking them.
+Shapes contain geometry and implement two operations: `fill` and `stroke`. They know how their geometry is drawn, but not how it is styled — the renderer configures the surface before invoking them.
+
+### RenderContext
+
+Holds the current drawing state as a list of typed `Config<T>` entries (fill colour, stroke colour, stroke weight, ellipse mode, text font, text alignment, and so on). The renderer reads from the context when drawing; style methods on `Canvas` write to it.
+
+This design means adding a new style setting is self-contained: implement `Config<T>`, register it in `RenderContext`, and expose it through `Canvas` and `Renderer`. Nothing else changes.
 
 ---
 
 ## Design Principles
 
-**Separation of concerns.** Geometry, styling and rendering are kept separate. Shapes know their geometry. The renderer owns the style. Canvas owns the API.
+**Separation of concerns.** Geometry, styling and rendering are kept separate. Shapes know their geometry. The renderer owns the style. `Canvas` owns the API.
 
-**New shapes are cheap.** Adding a shape means implementing two methods. The renderer, canvas and sketch do not need to change.
+**New shapes are cheap.** Adding a shape means implementing `fill` and `stroke` on a new `Shape`. The renderer, canvas and sketch do not need to change.
 
-**Style is centralised.** Fill, stroke, and other settings live in the `RenderContext`. Every shape drawn after a style change uses the new style. This mirrors Processing's model and eliminates per-shape styling boilerplate.
+**New style settings are cheap.** Adding a style setting means implementing `Config<T>` and registering it. No existing code needs to change.
+
+**Style is centralised.** All settings live in the `RenderContext`. Every shape drawn after a style change uses the new style, and all settings reset to their defaults at the start of each frame. This mirrors Processing's model and eliminates per-shape styling boilerplate.
 
 **Java-native.** SketchKit sits on top of Java2D and Swing rather than replacing them. It is a convenience layer, not a separate runtime.
 
