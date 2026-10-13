@@ -91,13 +91,11 @@ import java.awt.event.MouseWheelListener;
  */
 public abstract class Sketch extends Canvas {
 
-    private static final int FPS = 60;
-    private static final int FRAME_DELAY = 1000 / FPS;
-
     private final Timer drawTimer;
     private final MouseState mouseState = new MouseState();
     private final KeyState keyState = new KeyState();
 
+    private int targetFps = 60;
     private double deltaTime;
     private long lastFrameTime;
 
@@ -135,7 +133,7 @@ public abstract class Sketch extends Canvas {
         registerMouseListeners();
         registerKeyListeners();
 
-        drawTimer = new Timer(FRAME_DELAY, event -> repaint());
+        drawTimer = new Timer(1000 / targetFps, event -> repaint());
 
         setup();
         setupCompleted = true;
@@ -199,6 +197,21 @@ public abstract class Sketch extends Canvas {
             redrawRequested = true;
             repaint();
         }
+    }
+
+    /**
+     * Sets the target frame rate for the drawing loop.
+     *
+     * <p>The delay between frames is adjusted to approximate the requested rate. The actual
+     * rate may be lower depending on how long {@link #draw()} takes to execute. Has no effect
+     * if continuous drawing is paused via {@link #noLoop()}.
+     *
+     * @param fps the desired frames per second; clamped to a minimum of 1
+     */
+    public final void frameRate(final int fps) {
+        targetFps = Math.max(1, fps);
+        drawTimer.setDelay(1000 / targetFps);
+        drawTimer.setInitialDelay(1000 / targetFps);
     }
 
     // ------------------------------------------------------------------ mouse state
