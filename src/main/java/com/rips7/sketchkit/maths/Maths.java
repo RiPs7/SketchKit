@@ -38,6 +38,28 @@ public final class Maths {
     }
 
     /**
+     * Returns a random number between 0 (inclusive) and {@code upper} (exclusive).
+     *
+     * @param upper the upper bound, exclusive
+     * @return a pseudo-random value in the range {@code [0, upper)}
+     */
+    public static double random(final double upper) {
+        return random(0, upper);
+    }
+
+    /**
+     * Returns a random element from the given array.
+     *
+     * @param arr the array
+     * @return a random element from the array
+     * @param <T> the type of the elements in the array
+     */
+    public static <T> T random(final T[] arr) {
+        final int randomIndex = (int) Math.floor(Math.random() * arr.length);
+        return arr[randomIndex];
+    }
+
+    /**
      * Rescales a value from one range to another.
      *
      * @param value   the value to rescale

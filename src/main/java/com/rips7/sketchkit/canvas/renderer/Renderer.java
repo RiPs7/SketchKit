@@ -191,6 +191,7 @@ public final class Renderer {
      * Builds a custom shape from a sequence of vertices.
      */
     public final class ShapeBuilder {
+        public static final boolean CLOSE = true;
 
         private final Path2D path = new Path2D.Double();
 
@@ -218,12 +219,24 @@ public final class Renderer {
         /**
          * Completes and draws the shape.
          *
-         * <p>The shape is closed before being drawn, connecting the final vertex
+         * <p>If {@code close} is {@code true}, the shape is closed by connecting the
+         * final vertex back to the first vertex. The current fill and stroke styles are used.
+         *
+         * @param close whether to close the shape
+         */
+        public void endShape(final boolean close) {
+            if (close) {
+                path.closePath();
+            }
+            draw(new Path(path));
+        }
+
+        /**
+         * Completes and draws the shape, closing it by connecting the final vertex
          * back to the first vertex. The current fill and stroke styles are used.
          */
         public void endShape() {
-            path.closePath();
-            draw(new Path(path));
+            endShape(false);
         }
     }
 
